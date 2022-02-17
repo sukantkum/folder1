@@ -44,10 +44,19 @@ class DriveAPI:
             with open('token.pickle', 'wb') as token:
                 pickle.dump(self.creds, token)
 
-        # Connect to the API service
+        # Connecting API service
         self.service = build('drive', 'v3', credentials=self.creds)
+        #Fetching list of files
 
 
+        results = self.service.files().list(
+            pageSize=100, fields="files(id, name)").execute()
+        items = results.get('files', [])
+
+        # printing files
+
+        print("Here's a list of files: \n")
+        print(*items, sep="\n", end="\n\n")
 
     def FileDownload(self, file_id, file_name):
         request = self.service.files().get_media(fileId=file_id)
@@ -68,6 +77,7 @@ class DriveAPI:
                 shutil.copyfileobj(fh, f)
 
             print("File Downloaded")
+            self.file = self.service.files().get(fileId=file_id, fields='size,modifiedTime').execute()
             # True on success
             return True
         except:
@@ -76,11 +86,33 @@ class DriveAPI:
             print("Something went wrong.")
             return False
 
-    def test_download(self,file_name):
-        assert file_name == "ChicagoCensusData.csv"
 
+    #Test cases:
+    def fileExistsAfterDownload(self,file_name):
+        assert os.path.exists(f_name)
+        print("The file download check completed")
+
+
+    def fileSizecheckAfterDownload(self,file_name):
+        file_size = os.path.getsize(f_name)
+        assert file_size == int(self.file['size'])
+        print("The size of file in Gdrive and file downloaded locally matches")
 if __name__ == "__main__":
     obj = DriveAPI()
-    obj.FileDownload("13qbs-X047d6i68ciKgdpM1aMLBY570di", "ChicagoCensusData.csv")
-    obj.test_download("ChicagoCensusData.csv")
+    i = int(input("Enter your choice:"
+                  "1 - Download file, 2- Exit.\n"))
+
+    if i == 1:
+        f_id = input("Enter file id: ")
+        f_name = input("Enter file name: ")
+        obj.FileDownload(f_id, f_name)
+
+    elif i == 2:
+        f_path = input("Enter full file path: ")
+        obj.FileUpload(f_path)
+
+    else:
+        exit()
+    obj.fileExistsAfterDownload(f_name)
+    obj.fileSizecheckAfterDownload(f_name)
 
